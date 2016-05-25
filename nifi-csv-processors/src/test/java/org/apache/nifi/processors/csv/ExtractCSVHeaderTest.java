@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 
 import static org.apache.nifi.processors.csv.ExtractCSVHeader.ATTR_HEADER_COLUMN_COUNT;
@@ -43,7 +44,7 @@ public class ExtractCSVHeaderTest {
     }
 
     @Test
-    public void testCleanHeader() throws IOException {
+    public void cleanHeader() throws IOException {
         final TestRunner runner = TestRunners.newTestRunner(ExtractCSVHeader.class);
         final Path file = dataPath.resolve("test1.csv");
 
@@ -63,7 +64,7 @@ public class ExtractCSVHeaderTest {
     }
 
     @Test
-    public void testMixedHeader() throws IOException {
+    public void mixedHeader() throws IOException {
         final TestRunner runner = TestRunners.newTestRunner(ExtractCSVHeader.class);
         final Path file = dataPath.resolve("test2.csv");
 
@@ -82,5 +83,81 @@ public class ExtractCSVHeaderTest {
         ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "4", "Organization Address, and Stuff");
     }
 
+    @Test
+    public void cleanHeaderTabs() throws IOException {
+        final TestRunner runner = TestRunners.newTestRunner(ExtractCSVHeader.class);
+        runner.setProperty(ExtractCSVHeader.PROP_FORMAT, ExtractCSVHeader.VALUE_TAB);
+        final Path file = dataPath.resolve("test1tabs.csv");
 
+        runner.enqueue(file);
+        runner.run();
+        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
+        runner.assertTransferCount(REL_SUCCESS, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        MockFlowFile ff = output.get(0);
+        ff.assertAttributeEquals(ATTR_HEADER_ORIGINAL,
+                "Registry\tAssignment\tOrganization Name\tOrganization Address");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "1", "Registry");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "3", "Organization Name");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "4", "Organization Address");
+    }
+
+    @Test
+    public void cleanHeaderExcelTabs() throws IOException {
+        final TestRunner runner = TestRunners.newTestRunner(ExtractCSVHeader.class);
+        runner.setProperty(ExtractCSVHeader.PROP_FORMAT, ExtractCSVHeader.VALUE_EXCEL);
+        runner.setProperty(ExtractCSVHeader.PROP_DELIMITER, "\t");
+        final Path file = dataPath.resolve("test1tabs.csv");
+
+        runner.enqueue(file);
+        runner.run();
+        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
+        runner.assertTransferCount(REL_SUCCESS, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        MockFlowFile ff = output.get(0);
+        ff.assertAttributeEquals(ATTR_HEADER_ORIGINAL,
+                "Registry\tAssignment\tOrganization Name\tOrganization Address");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "1", "Registry");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "3", "Organization Name");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "4", "Organization Address");
+    }
+
+    @Test
+    public void unsupportedFormat() throws IOException {
+        final TestRunner runner = TestRunners.newTestRunner(ExtractCSVHeader.class);
+        runner.setProperty(ExtractCSVHeader.PROP_FORMAT, "NO_SUCH_FORMAT");
+        runner.setProperty(ExtractCSVHeader.PROP_DELIMITER, "\t");
+        final Path file = dataPath.resolve("test1tabs.csv");
+
+        runner.enqueue(file);
+        runner.assertNotValid();
+    }
+
+    @Test
+    public void formatFromExpression() throws IOException {
+        final TestRunner runner = TestRunners.newTestRunner(ExtractCSVHeader.class);
+        final Path file = dataPath.resolve("test1tabs.csv");
+
+        // would need special arrangements for property, EL and validator to support this
+        // runner.setProperty(ExtractCSVHeader.PROP_FORMAT, "${my.incoming.format}");
+        // runner.enqueue(file, Collections.singletonMap("my.incoming.format", "TAB"));
+        runner.setProperty(ExtractCSVHeader.PROP_DELIMITER, "${my.incoming.delimiter}");
+        runner.enqueue(file, Collections.singletonMap("my.incoming.delimiter", "\t"));
+        runner.run();
+        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
+        runner.assertTransferCount(REL_SUCCESS, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        MockFlowFile ff = output.get(0);
+        ff.assertAttributeEquals(ATTR_HEADER_ORIGINAL,
+                "Registry\tAssignment\tOrganization Name\tOrganization Address");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "1", "Registry");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "3", "Organization Name");
+        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "4", "Organization Address");
+    }
 }
