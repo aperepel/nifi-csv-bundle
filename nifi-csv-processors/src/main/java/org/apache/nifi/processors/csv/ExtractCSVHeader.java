@@ -86,11 +86,10 @@ public class ExtractCSVHeader extends AbstractProcessor {
 
     public static final PropertyDescriptor PROP_FORMAT = new PropertyDescriptor
                                                                      .Builder().name("Delimited Format")
-                                                                 .description("Example Property")
+                                                                 .description("Delimited content format")
                                                                  .required(true)
                                                                  .defaultValue(VALUE_EXCEL.getValue())
                                                                  .allowableValues(VALUE_EXCEL, VALUE_CSV, VALUE_RFC4180, VALUE_TAB, VALUE_MYSQL)
-                                                                 .expressionLanguageSupported(true)
                                                                  .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
                                                                  .build();
 
@@ -203,7 +202,7 @@ public class ExtractCSVHeader extends AbstractProcessor {
                     attrs.put(ATTR_HEADER_ORIGINAL, header);
 
 
-                    final String format = context.getProperty(PROP_FORMAT).evaluateAttributeExpressions(flowFile).getValue();
+                    final String format = context.getProperty(PROP_FORMAT).getValue();
                     final String delimiter = context.getProperty(PROP_DELIMITER).evaluateAttributeExpressions(flowFile).getValue();
                     // TODO validate delimiter in the callback first
                     final CSVFormat csvFormat = buildFormat(format,
