@@ -160,4 +160,12 @@ public class ExtractCSVHeaderTest {
         ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "3", "Organization Name");
         ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "4", "Organization Address");
     }
+
+    @Test
+    public void multiByteDelimiter() {
+        final TestRunner runner = TestRunners.newTestRunner(ExtractCSVHeader.class);
+        runner.setProperty(ExtractCSVHeader.PROP_DELIMITER, ":::");
+        runner.enqueue("test");
+        runner.assertNotValid();
+    }
 }

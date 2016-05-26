@@ -29,6 +29,8 @@ import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.components.ValidationContext;
+import org.apache.nifi.components.ValidationResult;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.AbstractProcessor;
 import org.apache.nifi.processor.ProcessContext;
@@ -43,6 +45,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -146,6 +149,31 @@ public class ExtractCSVHeader extends AbstractProcessor {
     @Override
     public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
         return descriptors;
+    }
+
+    @Override
+    protected Collection<ValidationResult> customValidate(ValidationContext validationContext) {
+        final List<ValidationResult> validationResults = new ArrayList<>(super.customValidate(validationContext));
+
+        String delimiter = validationContext.getProperty(PROP_DELIMITER).getValue();
+        // guaranteed to be non-null by now
+        if (delimiter != null) {
+            if (delimiter.length() > 1) {
+                ValidationResult result = StandardValidators.ATTRIBUTE_EXPRESSION_LANGUAGE_VALIDATOR
+                                                  .validate(PROP_DELIMITER.getDisplayName(), delimiter, validationContext);
+                if (!result.isValid()) {
+                    validationResults.add(new ValidationResult.Builder()
+                                                  .subject(PROP_DELIMITER.getDisplayName())
+                                                  .explanation("Only NiFI Expression or or single-byte delimiters are supported")
+                                                  .build()
+                    );
+                }
+
+
+            }
+        }
+
+        return validationResults;
     }
 
     @OnScheduled
