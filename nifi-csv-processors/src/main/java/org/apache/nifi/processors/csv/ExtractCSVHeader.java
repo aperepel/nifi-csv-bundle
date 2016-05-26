@@ -68,11 +68,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
         })
 public class ExtractCSVHeader extends AbstractProcessor {
 
-    public static final String ATTR_HEADER_ORIGINAL = "delimited.header.original";
+    public static final String ATTR_HEADER_ORIGINAL = "header.original";
 
-    public static final String ATTR_HEADER_COLUMN_COUNT = "delimited.header.columnCount";
+    public static final String ATTR_HEADER_COLUMN_COUNT = "columnCount";
 
-    public static final String ATTR_HEADER_COLUMN_PREFIX = "delimited.header.column.";
+    public static final String DEFAULT_ATTR_PREFIX = "delimited.header.column.";
 
     public static final AllowableValue VALUE_CSV = new AllowableValue("CSV", "CSV", "Standard comma-separated format.");
 
@@ -84,8 +84,8 @@ public class ExtractCSVHeader extends AbstractProcessor {
     public static final AllowableValue VALUE_MYSQL = new AllowableValue("MYSQL", "MYSQL", "Default MySQL format used " +
                                                                                                   "by the {@code SELECT INTO OUTFILE} and {@code LOAD DATA INFILE} operations.");
 
-    public static final PropertyDescriptor PROP_FORMAT = new PropertyDescriptor
-                                                                     .Builder().name("Delimited Format")
+    public static final PropertyDescriptor PROP_FORMAT = new PropertyDescriptor.Builder()
+                                                                 .name("Delimited Format")
                                                                  .description("Delimited content format")
                                                                  .required(true)
                                                                  .defaultValue(VALUE_EXCEL.getValue())
@@ -93,14 +93,23 @@ public class ExtractCSVHeader extends AbstractProcessor {
                                                                  .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
                                                                  .build();
 
-    public static final PropertyDescriptor PROP_DELIMITER = new PropertyDescriptor
-                                                                        .Builder().name("Column Delimiter")
+    public static final PropertyDescriptor PROP_DELIMITER = new PropertyDescriptor.Builder()
+                                                                    .name("Column Delimiter")
                                                                     .description("Column Delimiter")
                                                                     .required(false)
                                                                     .expressionLanguageSupported(true)
                                                                     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
                                                                     .build();
 
+    public static final PropertyDescriptor PROP_ATTR_PREFIX = new PropertyDescriptor.Builder()
+                                                                      .name("Output Attribute Prefix")
+                                                                      .description("Output Attributes Prefix. Parsed header columns will be written to these attributes with " +
+                                                                                           "1-based trailing index.")
+                                                                      .required(true)
+                                                                      .expressionLanguageSupported(true)
+                                                                      .defaultValue(DEFAULT_ATTR_PREFIX)
+                                                                      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+                                                                      .build();
 
     public static final Relationship REL_SUCCESS = new Relationship.Builder()
                                                            .name("success")
@@ -132,6 +141,7 @@ public class ExtractCSVHeader extends AbstractProcessor {
         final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
         descriptors.add(PROP_FORMAT);
         descriptors.add(PROP_DELIMITER);
+        descriptors.add(PROP_ATTR_PREFIX);
         this.descriptors = Collections.unmodifiableList(descriptors);
 
         final Set<Relationship> relationships = new HashSet<Relationship>();
@@ -167,8 +177,6 @@ public class ExtractCSVHeader extends AbstractProcessor {
                                                   .build()
                     );
                 }
-
-
             }
         }
 
@@ -199,11 +207,13 @@ public class ExtractCSVHeader extends AbstractProcessor {
                 if (iterator.hasNext()) {
                     lineFound.set(true);
                     final String header = iterator.nextLine();
-                    attrs.put(ATTR_HEADER_ORIGINAL, header);
 
 
                     final String format = context.getProperty(PROP_FORMAT).getValue();
                     final String delimiter = context.getProperty(PROP_DELIMITER).evaluateAttributeExpressions(flowFile).getValue();
+                    final String prefix = context.getProperty(PROP_ATTR_PREFIX).evaluateAttributeExpressions(flowFile).getValue();
+
+                    attrs.put(prefix + ATTR_HEADER_ORIGINAL, header);
                     // TODO validate delimiter in the callback first
                     final CSVFormat csvFormat = buildFormat(format,
                             delimiter,
@@ -212,10 +222,10 @@ public class ExtractCSVHeader extends AbstractProcessor {
                     final CSVParser parser = csvFormat.parse(new StringReader(header));
                     final Map<String, Integer> headers = parser.getHeaderMap();
                     final int columnCount = headers.size();
-                    attrs.put(ATTR_HEADER_COLUMN_COUNT, String.valueOf(columnCount));
+                    attrs.put(prefix + ATTR_HEADER_COLUMN_COUNT, String.valueOf(columnCount));
                     for (Map.Entry<String, Integer> h : headers.entrySet()) {
                         // CSV columns are 1-based in Excel
-                        attrs.put(ATTR_HEADER_COLUMN_PREFIX + (h.getValue() + 1), h.getKey());
+                        attrs.put(prefix + (h.getValue() + 1), h.getKey());
                     }
                 }
             }

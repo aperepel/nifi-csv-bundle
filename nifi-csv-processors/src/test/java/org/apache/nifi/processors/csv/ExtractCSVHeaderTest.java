@@ -29,8 +29,9 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.apache.nifi.processors.csv.ExtractCSVHeader.ATTR_HEADER_COLUMN_COUNT;
-import static org.apache.nifi.processors.csv.ExtractCSVHeader.ATTR_HEADER_COLUMN_PREFIX;
 import static org.apache.nifi.processors.csv.ExtractCSVHeader.ATTR_HEADER_ORIGINAL;
+import static org.apache.nifi.processors.csv.ExtractCSVHeader.DEFAULT_ATTR_PREFIX;
+import static org.apache.nifi.processors.csv.ExtractCSVHeader.PROP_ATTR_PREFIX;
 import static org.apache.nifi.processors.csv.ExtractCSVHeader.REL_SUCCESS;
 
 
@@ -54,13 +55,35 @@ public class ExtractCSVHeaderTest {
         runner.assertTransferCount(REL_SUCCESS, 1);
         List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
         MockFlowFile ff = output.get(0);
-        ff.assertAttributeEquals(ATTR_HEADER_ORIGINAL,
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry,Assignment,Organization Name,Organization Address");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_COUNT, "4");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "1", "Registry");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "2", "Assignment");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "3", "Organization Name");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "4", "Organization Address");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "1", "Registry");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "3", "Organization Name");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "4", "Organization Address");
+    }
+
+    @Test
+    public void attributePrefix() throws IOException {
+        final TestRunner runner = TestRunners.newTestRunner(ExtractCSVHeader.class);
+        final Path file = dataPath.resolve("test1.csv");
+        String prefix = "my.prefix.column";
+        runner.setProperty(PROP_ATTR_PREFIX, prefix);
+
+        runner.enqueue(file);
+        runner.run();
+        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
+        runner.assertTransferCount(REL_SUCCESS, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        MockFlowFile ff = output.get(0);
+        ff.assertAttributeEquals(prefix + ATTR_HEADER_ORIGINAL,
+                "Registry,Assignment,Organization Name,Organization Address");
+        ff.assertAttributeEquals(prefix + ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(prefix + "1", "Registry");
+        ff.assertAttributeEquals(prefix + "2", "Assignment");
+        ff.assertAttributeEquals(prefix + "3", "Organization Name");
+        ff.assertAttributeEquals(prefix + "4", "Organization Address");
     }
 
     @Test
@@ -74,13 +97,13 @@ public class ExtractCSVHeaderTest {
         runner.assertTransferCount(REL_SUCCESS, 1);
         List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
         MockFlowFile ff = output.get(0);
-        ff.assertAttributeEquals(ATTR_HEADER_ORIGINAL,
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "\"Registry Name\",Assignment,\"Organization Name & Notes\",\"Organization Address, and Stuff\"");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_COUNT, "4");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "1", "Registry Name");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "2", "Assignment");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "3", "Organization Name & Notes");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "4", "Organization Address, and Stuff");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "1", "Registry Name");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "3", "Organization Name & Notes");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "4", "Organization Address, and Stuff");
     }
 
     @Test
@@ -95,13 +118,13 @@ public class ExtractCSVHeaderTest {
         runner.assertTransferCount(REL_SUCCESS, 1);
         List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
         MockFlowFile ff = output.get(0);
-        ff.assertAttributeEquals(ATTR_HEADER_ORIGINAL,
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry\tAssignment\tOrganization Name\tOrganization Address");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_COUNT, "4");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "1", "Registry");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "2", "Assignment");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "3", "Organization Name");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "4", "Organization Address");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "1", "Registry");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "3", "Organization Name");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "4", "Organization Address");
     }
 
     @Test
@@ -117,13 +140,13 @@ public class ExtractCSVHeaderTest {
         runner.assertTransferCount(REL_SUCCESS, 1);
         List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
         MockFlowFile ff = output.get(0);
-        ff.assertAttributeEquals(ATTR_HEADER_ORIGINAL,
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry\tAssignment\tOrganization Name\tOrganization Address");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_COUNT, "4");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "1", "Registry");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "2", "Assignment");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "3", "Organization Name");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "4", "Organization Address");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "1", "Registry");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "3", "Organization Name");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "4", "Organization Address");
     }
 
     @Test
@@ -152,13 +175,13 @@ public class ExtractCSVHeaderTest {
         runner.assertTransferCount(REL_SUCCESS, 1);
         List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
         MockFlowFile ff = output.get(0);
-        ff.assertAttributeEquals(ATTR_HEADER_ORIGINAL,
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry\tAssignment\tOrganization Name\tOrganization Address");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_COUNT, "4");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "1", "Registry");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "2", "Assignment");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "3", "Organization Name");
-        ff.assertAttributeEquals(ATTR_HEADER_COLUMN_PREFIX + "4", "Organization Address");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "1", "Registry");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "3", "Organization Name");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "4", "Organization Address");
     }
 
     @Test
