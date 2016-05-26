@@ -32,6 +32,20 @@
             <version>1.3</version>
         </dependency>
 
+        <!-- Only for a patched AttributesToJSON https://issues.apache.org/jira/browse/NIFI-1923-->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.6.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.9.13</version>
+        </dependency>
+        <!-- ^Above: Only for a patched AttributesToJSON-->
+
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-api</artifactId>
