@@ -50,31 +50,29 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @EventDriven
 @SideEffectFree
 @SupportsBatching
-@Tags({"patched", "json", "attributes", "flowfile"})
+@Tags({"json", "attributes", "flowfile", "regex"})
 @InputRequirement(InputRequirement.Requirement.INPUT_REQUIRED)
-@CapabilityDescription("[PATCHED] Generates a JSON representation of the input FlowFile Attributes. The resulting JSON " +
+@CapabilityDescription("Generates a JSON representation of the input FlowFile Attributes. The resulting JSON " +
         "can be written to either a new Attribute 'JSONAttributes' or written to the FlowFile as content.")
 @WritesAttribute(attribute = "JSONAttributes", description = "JSON representation of Attributes")
-public class AttributesToJSON extends AbstractProcessor {
+public class RegexAttributesToJSON extends AbstractProcessor {
 
     public static final String JSON_ATTRIBUTE_NAME = "JSONAttributes";
-    private static final String AT_LIST_SEPARATOR = ",";
 
     public static final String DESTINATION_ATTRIBUTE = "flowfile-attribute";
     public static final String DESTINATION_CONTENT = "flowfile-content";
     private static final String APPLICATION_JSON = "application/json";
 
 
-    public static final PropertyDescriptor ATTRIBUTES_LIST = new PropertyDescriptor.Builder()
-            .name("Attributes List")
-            .description("Comma separated list of attributes to be included in the resulting JSON. If this value " +
-                    "is left empty then all existing Attributes will be included. This list of attributes is " +
-                    "case sensitive. If an attribute specified in the list is not found it will be be emitted " +
-                    "to the resulting JSON with an empty string or NULL value.")
+    public static final PropertyDescriptor ATTRIBUTES_REGEX = new PropertyDescriptor.Builder()
+            .name("Attributes Filter Regular Expression")
+            .description("Attributes matching this regex will be included in the resulting JSON. If this value " +
+                    "is left empty then all existing Attributes will be included.")
             .required(false)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
@@ -120,7 +118,7 @@ public class AttributesToJSON extends AbstractProcessor {
     @Override
     protected void init(final ProcessorInitializationContext context) {
         final List<PropertyDescriptor> properties = new ArrayList<>();
-        properties.add(ATTRIBUTES_LIST);
+        properties.add(ATTRIBUTES_REGEX);
         properties.add(DESTINATION);
         properties.add(INCLUDE_CORE_ATTRIBUTES);
         properties.add(NULL_VALUE_FOR_EMPTY_STRING);
@@ -149,28 +147,20 @@ public class AttributesToJSON extends AbstractProcessor {
      * @return
      *  Map of values that are feed to a Jackson ObjectMapper
      */
-    protected Map<String, String> buildAttributesMapForFlowFile(FlowFile ff, String atrList,
+    protected Map<String, String> buildAttributesMapForFlowFile(FlowFile ff, String attrRegex,
                                                                 boolean includeCoreAttributes,
                                                                 boolean nullValForEmptyString) {
 
         Map<String, String> atsToWrite = new HashMap<>();
 
         //If list of attributes specified get only those attributes. Otherwise write them all
-        if (StringUtils.isNotBlank(atrList)) {
-            String[] ats = StringUtils.split(atrList, AT_LIST_SEPARATOR);
-            if (ats != null) {
-                for (String str : ats) {
-                    String cleanStr = str.trim();
-                    String val = ff.getAttribute(cleanStr);
-                    if (val != null) {
-                        atsToWrite.put(cleanStr, val);
-                    } else {
-                        if (nullValForEmptyString) {
-                            atsToWrite.put(cleanStr, null);
-                        } else {
-                            atsToWrite.put(cleanStr, "");
-                        }
-                    }
+        if (StringUtils.isNotBlank(attrRegex)) {
+            final Pattern pattern = Pattern.compile(attrRegex);
+            Map<String, String> attrs = ff.getAttributes();
+
+            for (String key : attrs.keySet()) {
+                if (pattern.matcher(key).matches()) {
+                    atsToWrite.put(key, attrs.get(key));
                 }
             }
         } else {
@@ -208,7 +198,7 @@ public class AttributesToJSON extends AbstractProcessor {
         }
 
         final Map<String, String> atrList = buildAttributesMapForFlowFile(original,
-                context.getProperty(ATTRIBUTES_LIST).getValue(),
+                context.getProperty(ATTRIBUTES_REGEX).getValue(),
                 context.getProperty(INCLUDE_CORE_ATTRIBUTES).asBoolean(),
                 context.getProperty(NULL_VALUE_FOR_EMPTY_STRING).asBoolean());
 
