@@ -21,6 +21,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
@@ -66,6 +67,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
                                                                                                 "listed with a 1-based index"),
                 @WritesAttribute(attribute = "delimited.header.columnCount", description = "Header line as is")
         })
+@InputRequirement(InputRequirement.Requirement.INPUT_REQUIRED)
 public class ExtractCSVHeader extends AbstractProcessor {
 
     public static final String ATTR_HEADER_ORIGINAL = "header.original";
