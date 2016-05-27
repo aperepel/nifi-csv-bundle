@@ -72,5 +72,20 @@ public class ParseCSVRecordTest {
         ff.assertAttributeNotExists(DEFAULT_VALUE_ATTR_PREFIX + "2");
     }
 
+    @Test
+    public void defaultAttributesTabsNoSchemaNoCustomHeader() {
+        final TestRunner runner = TestRunners.newTestRunner(ParseCSVRecord.class);
+        runner.setProperty(ParseCSVRecord.PROP_DELIMITER, "\t");
+
+        runner.enqueue("row1col1\trow1col2\nrow2col1\trow2col2");
+
+        runner.run();
+
+        runner.assertAllFlowFilesTransferred(REL_SUCCESS, 1);
+        MockFlowFile ff = runner.getFlowFilesForRelationship(REL_SUCCESS).get(0);
+        ff.assertContentEquals("row1col1\trow1col2\nrow2col1\trow2col2");
+        ff.assertAttributeEquals(DEFAULT_VALUE_ATTR_PREFIX + "1", "row1col1");
+        ff.assertAttributeEquals(DEFAULT_VALUE_ATTR_PREFIX + "2", "row1col2");
+    }
 
 }
