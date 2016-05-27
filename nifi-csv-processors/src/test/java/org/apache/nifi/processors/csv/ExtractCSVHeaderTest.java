@@ -30,8 +30,8 @@ import java.util.List;
 
 import static org.apache.nifi.processors.csv.ExtractCSVHeader.ATTR_HEADER_COLUMN_COUNT;
 import static org.apache.nifi.processors.csv.ExtractCSVHeader.ATTR_HEADER_ORIGINAL;
-import static org.apache.nifi.processors.csv.ExtractCSVHeader.DEFAULT_ATTR_PREFIX;
-import static org.apache.nifi.processors.csv.ExtractCSVHeader.PROP_ATTR_PREFIX;
+import static org.apache.nifi.processors.csv.ExtractCSVHeader.DEFAULT_SCHEMA_ATTR_PREFIX;
+import static org.apache.nifi.processors.csv.ExtractCSVHeader.PROP_SCHEMA_ATTR_PREFIX;
 import static org.apache.nifi.processors.csv.ExtractCSVHeader.REL_CONTENT;
 import static org.apache.nifi.processors.csv.ExtractCSVHeader.REL_ORIGINAL;
 
@@ -55,13 +55,13 @@ public class ExtractCSVHeaderTest {
         runner.assertTransferCount(REL_ORIGINAL, 1);
         List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_ORIGINAL);
         MockFlowFile ff = output.get(0);
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry,Assignment,Organization Name,Organization Address");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "1", "Registry");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "2", "Assignment");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "3", "Organization Name");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "4", "Organization Address");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "1", "Registry");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "3", "Organization Name");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "4", "Organization Address");
     }
 
     @Test
@@ -69,7 +69,7 @@ public class ExtractCSVHeaderTest {
         final TestRunner runner = TestRunners.newTestRunner(ExtractCSVHeader.class);
         final Path file = dataPath.resolve("test1.csv");
         String prefix = "my.prefix.column";
-        runner.setProperty(PROP_ATTR_PREFIX, prefix);
+        runner.setProperty(PROP_SCHEMA_ATTR_PREFIX, prefix);
 
         runner.enqueue(file);
         runner.run();
@@ -95,13 +95,13 @@ public class ExtractCSVHeaderTest {
         runner.assertTransferCount(REL_ORIGINAL, 1);
         List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_ORIGINAL);
         MockFlowFile ff = output.get(0);
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "\"Registry Name\",Assignment,\"Organization Name & Notes\",\"Organization Address, and Stuff\"");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "1", "Registry Name");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "2", "Assignment");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "3", "Organization Name & Notes");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "4", "Organization Address, and Stuff");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "1", "Registry Name");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "3", "Organization Name & Notes");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "4", "Organization Address, and Stuff");
     }
 
     @Test
@@ -115,13 +115,13 @@ public class ExtractCSVHeaderTest {
         runner.assertTransferCount(REL_ORIGINAL, 1);
         List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_ORIGINAL);
         MockFlowFile ff = output.get(0);
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry\tAssignment\tOrganization Name\tOrganization Address");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "1", "Registry");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "2", "Assignment");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "3", "Organization Name");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "4", "Organization Address");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "1", "Registry");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "3", "Organization Name");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "4", "Organization Address");
     }
 
     @Test
@@ -136,13 +136,13 @@ public class ExtractCSVHeaderTest {
         runner.assertTransferCount(REL_ORIGINAL, 1);
         List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_ORIGINAL);
         MockFlowFile ff = output.get(0);
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry\tAssignment\tOrganization Name\tOrganization Address");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "1", "Registry");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "2", "Assignment");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "3", "Organization Name");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "4", "Organization Address");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "1", "Registry");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "3", "Organization Name");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "4", "Organization Address");
     }
 
     @Test
@@ -170,13 +170,13 @@ public class ExtractCSVHeaderTest {
         runner.assertTransferCount(REL_ORIGINAL, 1);
         List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_ORIGINAL);
         MockFlowFile ff = output.get(0);
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry\tAssignment\tOrganization Name\tOrganization Address");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "1", "Registry");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "2", "Assignment");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "3", "Organization Name");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + "4", "Organization Address");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "4");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "1", "Registry");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "2", "Assignment");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "3", "Organization Name");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + "4", "Organization Address");
     }
 
     @Test
@@ -198,6 +198,6 @@ public class ExtractCSVHeaderTest {
         runner.assertTransferCount(REL_CONTENT, 1);
         MockFlowFile ff = runner.getFlowFilesForRelationship(REL_CONTENT).get(0);
         ff.assertContentEquals("row1col1,row1col2\nrow2col1,row2col2");
-        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "2");
+        ff.assertAttributeEquals(DEFAULT_SCHEMA_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "2");
     }
 }

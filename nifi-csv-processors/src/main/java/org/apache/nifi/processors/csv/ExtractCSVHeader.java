@@ -33,7 +33,6 @@ import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.ValidationContext;
 import org.apache.nifi.components.ValidationResult;
 import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.processor.AbstractProcessor;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -58,9 +57,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-@Tags({"csv"})
+@Tags({"csv", "tab", "excel"})
 @CapabilityDescription("Extract a header from a delimited file and save it in an attribute. Also maintains a list and count of column headers.")
-@SeeAlso({ParseCSV.class})
+@SeeAlso({ParseCSVRecord.class})
 @WritesAttributes(
         {
                 @WritesAttribute(attribute = "delimited.header.original", description = "Header line as is"),
@@ -69,13 +68,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
                 @WritesAttribute(attribute = "delimited.header.columnCount", description = "Header line as is")
         })
 @InputRequirement(InputRequirement.Requirement.INPUT_REQUIRED)
-public class ExtractCSVHeader extends AbstractProcessor {
+public class ExtractCSVHeader extends AbstractCSVProcessor {
 
     public static final String ATTR_HEADER_ORIGINAL = "header.original";
 
     public static final String ATTR_HEADER_COLUMN_COUNT = "columnCount";
-
-    public static final String DEFAULT_ATTR_PREFIX = "delimited.header.column.";
 
     public static final AllowableValue VALUE_CSV = new AllowableValue("CSV", "CSV", "Standard comma-separated format.");
 
@@ -104,53 +101,42 @@ public class ExtractCSVHeader extends AbstractProcessor {
                                                                     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
                                                                     .build();
 
-    public static final PropertyDescriptor PROP_ATTR_PREFIX = new PropertyDescriptor.Builder()
+    public static final PropertyDescriptor PROP_SCHEMA_ATTR_PREFIX = new PropertyDescriptor.Builder()
                                                                       .name("Output Attribute Prefix")
                                                                       .description("Output Attributes Prefix. Parsed header columns will be written to these attributes with " +
                                                                                            "1-based trailing index.")
                                                                       .required(true)
                                                                       .expressionLanguageSupported(true)
-                                                                      .defaultValue(DEFAULT_ATTR_PREFIX)
+                                                                      .defaultValue(DEFAULT_SCHEMA_ATTR_PREFIX)
                                                                       .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
                                                                       .build();
 
     public static final Relationship REL_ORIGINAL = new Relationship.Builder()
-                                                           .name("original")
-                                                           .description("Original content")
-                                                           .build();
+                                                            .name("original")
+                                                            .description("Original content")
+                                                            .build();
 
     public static final Relationship REL_CONTENT = new Relationship.Builder()
-                                                            .name("content")
-                                                            .description("Delimited content without the header")
-                                                            .build();
+                                                           .name("content")
+                                                           .description("Delimited content without the header")
+                                                           .build();
 
 
     public static final Relationship REL_FAILURE = new Relationship.Builder()
                                                            .name("failure")
-                                                           .description("Error with incoming data")
+                                                           .description("Error in incoming data")
                                                            .build();
 
     private List<PropertyDescriptor> descriptors;
 
     private Set<Relationship> relationships;
 
-    private static final Map<String, CSVFormat> supportedFormats = new HashMap<>();
-
-    static {
-        // we are using more user-friendly names in the UI
-        supportedFormats.put(VALUE_EXCEL.getValue(), CSVFormat.EXCEL); // our default
-        supportedFormats.put(VALUE_CSV.getValue(), CSVFormat.DEFAULT);
-        supportedFormats.put(VALUE_TAB.getValue(), CSVFormat.TDF);
-        supportedFormats.put(VALUE_RFC4180.getValue(), CSVFormat.RFC4180);
-        supportedFormats.put(VALUE_MYSQL.getValue(), CSVFormat.MYSQL);
-    }
-
     @Override
     protected void init(final ProcessorInitializationContext context) {
         final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
         descriptors.add(PROP_FORMAT);
         descriptors.add(PROP_DELIMITER);
-        descriptors.add(PROP_ATTR_PREFIX);
+        descriptors.add(PROP_SCHEMA_ATTR_PREFIX);
         this.descriptors = Collections.unmodifiableList(descriptors);
 
         final Set<Relationship> relationships = new HashSet<Relationship>();
@@ -222,7 +208,7 @@ public class ExtractCSVHeader extends AbstractProcessor {
 
                     final String format = context.getProperty(PROP_FORMAT).getValue();
                     final String delimiter = context.getProperty(PROP_DELIMITER).evaluateAttributeExpressions(original).getValue();
-                    final String prefix = context.getProperty(PROP_ATTR_PREFIX).evaluateAttributeExpressions(original).getValue();
+                    final String prefix = context.getProperty(PROP_SCHEMA_ATTR_PREFIX).evaluateAttributeExpressions(original).getValue();
 
                     attrs.put(prefix + ATTR_HEADER_ORIGINAL, header);
                     // TODO validate delimiter in the callback first
@@ -267,23 +253,4 @@ public class ExtractCSVHeader extends AbstractProcessor {
         }
     }
 
-    protected CSVFormat buildFormat(String format, String delimiter, boolean withHeader, String customHeader) {
-        CSVFormat csvFormat = supportedFormats.get(format);
-        if (csvFormat == null) {
-            throw new IllegalArgumentException("Unsupported delimited format: " + format);
-        }
-
-        if (withHeader & customHeader != null) {
-            csvFormat = csvFormat.withSkipHeaderRecord(true);
-            csvFormat = csvFormat.withHeader(customHeader);
-        } else if (withHeader & customHeader == null) {
-            csvFormat = csvFormat.withHeader();
-        }
-
-        // don't use isNotBlank() here, as it strips tabs too
-        if (StringUtils.isNotEmpty(delimiter)) {
-            csvFormat = csvFormat.withDelimiter(delimiter.charAt(0));
-        }
-        return csvFormat;
-    }
 }

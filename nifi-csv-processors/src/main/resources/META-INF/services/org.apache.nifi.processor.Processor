@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 org.apache.nifi.processors.csv.ExtractCSVHeader
+org.apache.nifi.processors.csv.ParseCSVRecord
 
 # patched one https://issues.apache.org/jira/browse/NIFI-1923
 org.apache.nifi.processors.standard.RegexAttributesToJSON
