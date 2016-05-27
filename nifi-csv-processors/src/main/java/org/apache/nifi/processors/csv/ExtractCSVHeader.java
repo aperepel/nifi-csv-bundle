@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -207,6 +208,7 @@ public class ExtractCSVHeader extends AbstractProcessor {
         final AtomicBoolean lineFound = new AtomicBoolean(false);
         final Map<String, String> attrs = new HashMap<>();
 
+        final AtomicInteger headerLength = new AtomicInteger(0);
 
         session.read(original, new InputStreamCallback() {
             @Override
@@ -239,14 +241,12 @@ public class ExtractCSVHeader extends AbstractProcessor {
 
                     // strip the header and send to the 'content' relationship
                     if (StringUtils.isNotBlank(header)) {
-                        int headerLength = header.length();
+                        int hLength = header.length();
                         // move past the new line if there are more lines
-                        if (original.getSize() > headerLength + 1) {
-                            headerLength++;
+                        if (original.getSize() > hLength + 1) {
+                            hLength++;
                         }
-                        FlowFile contentOnly = session.clone(original, headerLength, original.getSize() - headerLength);
-                        FlowFile ff = session.putAllAttributes(contentOnly, attrs);
-                        session.transfer(ff, REL_CONTENT);
+                        headerLength.set(hLength);
                     }
                 }
             }
@@ -254,6 +254,13 @@ public class ExtractCSVHeader extends AbstractProcessor {
 
         if (lineFound.get()) {
             FlowFile ff = session.putAllAttributes(original, attrs);
+
+            int offset = headerLength.get();
+            if (offset > 0) {
+                FlowFile contentOnly = session.clone(ff, offset, original.getSize() - offset);
+                session.transfer(contentOnly, REL_CONTENT);
+            }
+
             session.transfer(ff, REL_ORIGINAL);
         } else {
             session.transfer(original, REL_FAILURE);
