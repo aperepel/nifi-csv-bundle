@@ -77,6 +77,13 @@ public class RegexAttributesToJSON extends AbstractProcessor {
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
 
+    public static final PropertyDescriptor ATTRIBUTES_STRIP_PREFIX = new PropertyDescriptor.Builder()
+            .name("Strip the Provided Attribute Name Prefix")
+            .description("Remove this prefix from the JSON attribute name")
+            .required(false)
+            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+            .build();
+
     public static final PropertyDescriptor DESTINATION = new PropertyDescriptor.Builder()
             .name("Destination")
             .description("Control if JSON value is written as a new flowfile attribute '" + JSON_ATTRIBUTE_NAME + "' " +
@@ -119,6 +126,7 @@ public class RegexAttributesToJSON extends AbstractProcessor {
     protected void init(final ProcessorInitializationContext context) {
         final List<PropertyDescriptor> properties = new ArrayList<>();
         properties.add(ATTRIBUTES_REGEX);
+        properties.add(ATTRIBUTES_STRIP_PREFIX);
         properties.add(DESTINATION);
         properties.add(INCLUDE_CORE_ATTRIBUTES);
         properties.add(NULL_VALUE_FOR_EMPTY_STRING);
@@ -149,7 +157,8 @@ public class RegexAttributesToJSON extends AbstractProcessor {
      */
     protected Map<String, String> buildAttributesMapForFlowFile(FlowFile ff, String attrRegex,
                                                                 boolean includeCoreAttributes,
-                                                                boolean nullValForEmptyString) {
+                                                                boolean nullValForEmptyString,
+                                                                String stripPrefix) {
 
         Map<String, String> atsToWrite = new HashMap<>();
 
@@ -160,7 +169,11 @@ public class RegexAttributesToJSON extends AbstractProcessor {
 
             for (String key : attrs.keySet()) {
                 if (pattern.matcher(key).matches()) {
-                    atsToWrite.put(key, attrs.get(key));
+                    String value = attrs.get(key);
+                    if (StringUtils.isNotBlank(stripPrefix) && key.length() > stripPrefix.length()) {
+                        key = key.substring(stripPrefix.length());
+                    }
+                    atsToWrite.put(key, value);
                 }
             }
         } else {
@@ -200,7 +213,8 @@ public class RegexAttributesToJSON extends AbstractProcessor {
         final Map<String, String> atrList = buildAttributesMapForFlowFile(original,
                 context.getProperty(ATTRIBUTES_REGEX).getValue(),
                 context.getProperty(INCLUDE_CORE_ATTRIBUTES).asBoolean(),
-                context.getProperty(NULL_VALUE_FOR_EMPTY_STRING).asBoolean());
+                context.getProperty(NULL_VALUE_FOR_EMPTY_STRING).asBoolean(),
+                context.getProperty(ATTRIBUTES_STRIP_PREFIX).getValue());
 
         try {
 

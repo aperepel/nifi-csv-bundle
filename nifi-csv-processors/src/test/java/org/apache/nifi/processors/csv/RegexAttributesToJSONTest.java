@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.nifi.processors.standard.RegexAttributesToJSON.ATTRIBUTES_REGEX;
+import static org.apache.nifi.processors.standard.RegexAttributesToJSON.ATTRIBUTES_STRIP_PREFIX;
 import static org.apache.nifi.processors.standard.RegexAttributesToJSON.DESTINATION;
 import static org.apache.nifi.processors.standard.RegexAttributesToJSON.DESTINATION_CONTENT;
 import static org.apache.nifi.processors.standard.RegexAttributesToJSON.INCLUDE_CORE_ATTRIBUTES;
@@ -60,5 +61,29 @@ public class RegexAttributesToJSONTest {
         List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
         MockFlowFile ff = output.get(0);
         ff.assertContentEquals("{\"my.prefix.1\":\"value1\",\"my.prefix.2\":\"value2\"}");
+        ff.assertAttributeEquals("my.excluded.prefix.3", "value3");
+    }
+
+    @Test
+    public void stripPrefix() {
+        final TestRunner runner = TestRunners.newTestRunner(RegexAttributesToJSON.class);
+        runner.setProperty(ATTRIBUTES_REGEX, "my.prefix..*");
+        runner.setProperty(INCLUDE_CORE_ATTRIBUTES, "false");
+        runner.setProperty(DESTINATION, DESTINATION_CONTENT);
+        runner.setProperty(ATTRIBUTES_STRIP_PREFIX, "my.prefix.");
+
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("my.prefix.column1", "value1");
+        attrs.put("my.prefix.column2", "value2");
+        attrs.put("my.excluded.prefix.3", "value3");
+
+        runner.enqueue("will be replaced", attrs);
+        runner.run();
+        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
+        runner.assertTransferCount(REL_SUCCESS, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        MockFlowFile ff = output.get(0);
+        ff.assertContentEquals("{\"column1\":\"value1\",\"column2\":\"value2\"}");
+        ff.assertAttributeEquals("my.excluded.prefix.3", "value3");
     }
 }
