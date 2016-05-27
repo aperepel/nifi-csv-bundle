@@ -113,10 +113,16 @@ public class ExtractCSVHeader extends AbstractProcessor {
                                                                       .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
                                                                       .build();
 
-    public static final Relationship REL_SUCCESS = new Relationship.Builder()
-                                                           .name("success")
-                                                           .description("Successfully extracted the header")
+    public static final Relationship REL_ORIGINAL = new Relationship.Builder()
+                                                           .name("original")
+                                                           .description("Original content")
                                                            .build();
+
+    public static final Relationship REL_CONTENT = new Relationship.Builder()
+                                                            .name("content")
+                                                            .description("Delimited content without the header")
+                                                            .build();
+
 
     public static final Relationship REL_FAILURE = new Relationship.Builder()
                                                            .name("failure")
@@ -147,7 +153,8 @@ public class ExtractCSVHeader extends AbstractProcessor {
         this.descriptors = Collections.unmodifiableList(descriptors);
 
         final Set<Relationship> relationships = new HashSet<Relationship>();
-        relationships.add(REL_SUCCESS);
+        relationships.add(REL_ORIGINAL);
+        relationships.add(REL_CONTENT);
         relationships.add(REL_FAILURE);
         this.relationships = Collections.unmodifiableSet(relationships);
     }
@@ -192,8 +199,8 @@ public class ExtractCSVHeader extends AbstractProcessor {
 
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
-        final FlowFile flowFile = session.get();
-        if (flowFile == null) {
+        final FlowFile original = session.get();
+        if (original == null) {
             return;
         }
 
@@ -201,7 +208,7 @@ public class ExtractCSVHeader extends AbstractProcessor {
         final Map<String, String> attrs = new HashMap<>();
 
 
-        session.read(flowFile, new InputStreamCallback() {
+        session.read(original, new InputStreamCallback() {
             @Override
             public void process(InputStream inputStream) throws IOException {
                 // TODO expose the charset property?
@@ -212,8 +219,8 @@ public class ExtractCSVHeader extends AbstractProcessor {
 
 
                     final String format = context.getProperty(PROP_FORMAT).getValue();
-                    final String delimiter = context.getProperty(PROP_DELIMITER).evaluateAttributeExpressions(flowFile).getValue();
-                    final String prefix = context.getProperty(PROP_ATTR_PREFIX).evaluateAttributeExpressions(flowFile).getValue();
+                    final String delimiter = context.getProperty(PROP_DELIMITER).evaluateAttributeExpressions(original).getValue();
+                    final String prefix = context.getProperty(PROP_ATTR_PREFIX).evaluateAttributeExpressions(original).getValue();
 
                     attrs.put(prefix + ATTR_HEADER_ORIGINAL, header);
                     // TODO validate delimiter in the callback first
@@ -229,15 +236,27 @@ public class ExtractCSVHeader extends AbstractProcessor {
                         // CSV columns are 1-based in Excel
                         attrs.put(prefix + (h.getValue() + 1), h.getKey());
                     }
+
+                    // strip the header and send to the 'content' relationship
+                    if (StringUtils.isNotBlank(header)) {
+                        int headerLength = header.length();
+                        // move past the new line if there are more lines
+                        if (original.getSize() > headerLength + 1) {
+                            headerLength++;
+                        }
+                        FlowFile contentOnly = session.clone(original, headerLength, original.getSize() - headerLength);
+                        FlowFile ff = session.putAllAttributes(contentOnly, attrs);
+                        session.transfer(ff, REL_CONTENT);
+                    }
                 }
             }
         });
 
         if (lineFound.get()) {
-            FlowFile ff = session.putAllAttributes(flowFile, attrs);
-            session.transfer(ff, REL_SUCCESS);
+            FlowFile ff = session.putAllAttributes(original, attrs);
+            session.transfer(ff, REL_ORIGINAL);
         } else {
-            session.transfer(flowFile, REL_FAILURE);
+            session.transfer(original, REL_FAILURE);
         }
     }
 

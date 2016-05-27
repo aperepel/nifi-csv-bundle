@@ -32,7 +32,8 @@ import static org.apache.nifi.processors.csv.ExtractCSVHeader.ATTR_HEADER_COLUMN
 import static org.apache.nifi.processors.csv.ExtractCSVHeader.ATTR_HEADER_ORIGINAL;
 import static org.apache.nifi.processors.csv.ExtractCSVHeader.DEFAULT_ATTR_PREFIX;
 import static org.apache.nifi.processors.csv.ExtractCSVHeader.PROP_ATTR_PREFIX;
-import static org.apache.nifi.processors.csv.ExtractCSVHeader.REL_SUCCESS;
+import static org.apache.nifi.processors.csv.ExtractCSVHeader.REL_CONTENT;
+import static org.apache.nifi.processors.csv.ExtractCSVHeader.REL_ORIGINAL;
 
 
 public class ExtractCSVHeaderTest {
@@ -51,9 +52,8 @@ public class ExtractCSVHeaderTest {
 
         runner.enqueue(file);
         runner.run();
-        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
-        runner.assertTransferCount(REL_SUCCESS, 1);
-        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        runner.assertTransferCount(REL_ORIGINAL, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_ORIGINAL);
         MockFlowFile ff = output.get(0);
         ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry,Assignment,Organization Name,Organization Address");
@@ -73,9 +73,8 @@ public class ExtractCSVHeaderTest {
 
         runner.enqueue(file);
         runner.run();
-        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
-        runner.assertTransferCount(REL_SUCCESS, 1);
-        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        runner.assertTransferCount(REL_ORIGINAL, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_ORIGINAL);
         MockFlowFile ff = output.get(0);
         ff.assertAttributeEquals(prefix + ATTR_HEADER_ORIGINAL,
                 "Registry,Assignment,Organization Name,Organization Address");
@@ -93,9 +92,8 @@ public class ExtractCSVHeaderTest {
 
         runner.enqueue(file);
         runner.run();
-        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
-        runner.assertTransferCount(REL_SUCCESS, 1);
-        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        runner.assertTransferCount(REL_ORIGINAL, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_ORIGINAL);
         MockFlowFile ff = output.get(0);
         ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "\"Registry Name\",Assignment,\"Organization Name & Notes\",\"Organization Address, and Stuff\"");
@@ -114,9 +112,8 @@ public class ExtractCSVHeaderTest {
 
         runner.enqueue(file);
         runner.run();
-        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
-        runner.assertTransferCount(REL_SUCCESS, 1);
-        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        runner.assertTransferCount(REL_ORIGINAL, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_ORIGINAL);
         MockFlowFile ff = output.get(0);
         ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry\tAssignment\tOrganization Name\tOrganization Address");
@@ -136,9 +133,8 @@ public class ExtractCSVHeaderTest {
 
         runner.enqueue(file);
         runner.run();
-        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
-        runner.assertTransferCount(REL_SUCCESS, 1);
-        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        runner.assertTransferCount(REL_ORIGINAL, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_ORIGINAL);
         MockFlowFile ff = output.get(0);
         ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry\tAssignment\tOrganization Name\tOrganization Address");
@@ -171,9 +167,8 @@ public class ExtractCSVHeaderTest {
         runner.setProperty(ExtractCSVHeader.PROP_DELIMITER, "${my.incoming.delimiter}");
         runner.enqueue(file, Collections.singletonMap("my.incoming.delimiter", "\t"));
         runner.run();
-        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
-        runner.assertTransferCount(REL_SUCCESS, 1);
-        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        runner.assertTransferCount(REL_ORIGINAL, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_ORIGINAL);
         MockFlowFile ff = output.get(0);
         ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_ORIGINAL,
                 "Registry\tAssignment\tOrganization Name\tOrganization Address");
@@ -190,5 +185,19 @@ public class ExtractCSVHeaderTest {
         runner.setProperty(ExtractCSVHeader.PROP_DELIMITER, ":::");
         runner.enqueue("test");
         runner.assertNotValid();
+    }
+
+    @Test
+    public void contentRelationship() {
+        final TestRunner runner = TestRunners.newTestRunner(ExtractCSVHeader.class);
+        runner.enqueue("header1,header2\nrow1col1,row1col2\nrow2col1,row2col2");
+
+        runner.run();
+
+        runner.assertTransferCount(REL_ORIGINAL, 1);
+        runner.assertTransferCount(REL_CONTENT, 1);
+        MockFlowFile ff = runner.getFlowFilesForRelationship(REL_CONTENT).get(0);
+        ff.assertContentEquals("row1col1,row1col2\nrow2col1,row2col2");
+        ff.assertAttributeEquals(DEFAULT_ATTR_PREFIX + ATTR_HEADER_COLUMN_COUNT, "2");
     }
 }
