@@ -90,6 +90,15 @@ public class ParseCSVRecord extends AbstractCSVProcessor {
                                                                              .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
                                                                              .build();
 
+    public static final PropertyDescriptor PROP_TRIM_VALUES = new PropertyDescriptor.Builder()
+                                                                             .name("Trim Values")
+                                                                             .description("Remove leading and trailing spaces from column value records (note, header is not trimmed)")
+                                                                             .required(true)
+                                                                             .allowableValues(Boolean.TRUE.toString(), Boolean.FALSE.toString())
+                                                                             .defaultValue("false")
+                                                                             .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+                                                                             .build();
+
 
     public static final Relationship REL_SUCCESS = new Relationship.Builder()
                                                            .name("success")
@@ -113,6 +122,7 @@ public class ParseCSVRecord extends AbstractCSVProcessor {
         descriptors.add(PROP_DELIMITER);
         descriptors.add(PROP_SCHEMA_ATTR_PREFIX);
         descriptors.add(PROP_VALUE_ATTR_PREFIX);
+        descriptors.add(PROP_TRIM_VALUES);
         this.descriptors = Collections.unmodifiableList(descriptors);
 
         final Set<Relationship> relationships = new HashSet<Relationship>();
@@ -180,6 +190,7 @@ public class ParseCSVRecord extends AbstractCSVProcessor {
                     final String delimiter = context.getProperty(PROP_DELIMITER).evaluateAttributeExpressions(original).getValue();
                     final String schemaPrefix = context.getProperty(PROP_SCHEMA_ATTR_PREFIX).evaluateAttributeExpressions(original).getValue();
                     final String valuePrefix = context.getProperty(PROP_VALUE_ATTR_PREFIX).evaluateAttributeExpressions(original).getValue();
+                    final boolean trimValues = context.getProperty(PROP_TRIM_VALUES).asBoolean();
 
                     final CSVFormat csvFormat = buildFormat(format,
                             delimiter,
@@ -213,6 +224,9 @@ public class ParseCSVRecord extends AbstractCSVProcessor {
                         }
                         // TODO indexed schemaless parsing vs auto-schema vs user-provided schema
                         String columnValue = record.get(i);
+                        if (trimValues) {
+                            columnValue = columnValue.trim();
+                        }
                         String attrName = (StringUtils.isBlank(valuePrefix)
                                                ? "delimited.column."
                                                : valuePrefix) + columnName;

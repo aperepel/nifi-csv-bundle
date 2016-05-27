@@ -27,6 +27,7 @@ import java.util.Map;
 
 import static org.apache.nifi.processors.csv.AbstractCSVProcessor.DEFAULT_SCHEMA_ATTR_PREFIX;
 import static org.apache.nifi.processors.csv.ParseCSVRecord.DEFAULT_VALUE_ATTR_PREFIX;
+import static org.apache.nifi.processors.csv.ParseCSVRecord.PROP_TRIM_VALUES;
 import static org.apache.nifi.processors.csv.ParseCSVRecord.REL_SUCCESS;
 
 
@@ -88,4 +89,19 @@ public class ParseCSVRecordTest {
         ff.assertAttributeEquals(DEFAULT_VALUE_ATTR_PREFIX + "2", "row1col2");
     }
 
+
+    @Test
+    public void trimValues() {
+        final TestRunner runner = TestRunners.newTestRunner(ParseCSVRecord.class);
+        runner.setProperty(PROP_TRIM_VALUES, "true");
+        runner.enqueue("row1col1,row1col2 \nrow2col1, row2col2");
+
+        runner.run();
+
+        runner.assertAllFlowFilesTransferred(REL_SUCCESS, 1);
+        MockFlowFile ff = runner.getFlowFilesForRelationship(REL_SUCCESS).get(0);
+        ff.assertContentEquals("row1col1,row1col2 \nrow2col1, row2col2");
+        ff.assertAttributeEquals(DEFAULT_VALUE_ATTR_PREFIX + "1", "row1col1");
+        ff.assertAttributeEquals(DEFAULT_VALUE_ATTR_PREFIX + "2", "row1col2");
+    }
 }
