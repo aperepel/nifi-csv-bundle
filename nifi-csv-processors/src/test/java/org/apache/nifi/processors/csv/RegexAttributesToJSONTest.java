@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -86,4 +87,28 @@ public class RegexAttributesToJSONTest {
         ff.assertContentEquals("{\"column1\":\"value1\",\"column2\":\"value2\"}");
         ff.assertAttributeEquals("my.excluded.prefix.3", "value3");
     }
+
+    @Test
+    public void stripNonExistentPrefix() {
+        final TestRunner runner = TestRunners.newTestRunner(RegexAttributesToJSON.class);
+        runner.setProperty(ATTRIBUTES_REGEX, "my.prefix..*");
+        runner.setProperty(INCLUDE_CORE_ATTRIBUTES, "false");
+        runner.setProperty(DESTINATION, DESTINATION_CONTENT);
+        runner.setProperty(ATTRIBUTES_STRIP_PREFIX, "no.such.prefix.");
+
+        Map<String, String> attrs = new LinkedHashMap<>();
+        attrs.put("my.prefix.column1", "value1");
+        attrs.put("my.prefix.column2", "value2");
+        attrs.put("my.excluded.prefix.3", "value3");
+
+        runner.enqueue("will be replaced", attrs);
+        runner.run();
+        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
+        runner.assertTransferCount(REL_SUCCESS, 1);
+        List<MockFlowFile> output = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        MockFlowFile ff = output.get(0);
+        ff.assertContentEquals("{\"my.prefix.column2\":\"value2\",\"my.prefix.column1\":\"value1\"}");
+        ff.assertAttributeEquals("my.excluded.prefix.3", "value3");
+    }
+
 }

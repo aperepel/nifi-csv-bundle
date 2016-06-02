@@ -162,7 +162,6 @@ public class RegexAttributesToJSON extends AbstractProcessor {
 
         Map<String, String> atsToWrite = new HashMap<>();
 
-        //If list of attributes specified get only those attributes. Otherwise write them all
         if (StringUtils.isNotBlank(attrRegex)) {
             final Pattern pattern = Pattern.compile(attrRegex);
             Map<String, String> attrs = ff.getAttributes();
@@ -170,7 +169,7 @@ public class RegexAttributesToJSON extends AbstractProcessor {
             for (String key : attrs.keySet()) {
                 if (pattern.matcher(key).matches()) {
                     String value = attrs.get(key);
-                    if (StringUtils.isNotBlank(stripPrefix) && key.length() > stripPrefix.length()) {
+                    if (StringUtils.isNotBlank(stripPrefix) && key.startsWith(stripPrefix)) {
                         key = key.substring(stripPrefix.length());
                     }
                     atsToWrite.put(key, value);
