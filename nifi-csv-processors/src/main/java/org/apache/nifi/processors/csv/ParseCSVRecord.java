@@ -71,6 +71,13 @@ public class ParseCSVRecord extends AbstractCSVProcessor {
 
     public static final String DEFAULT_VALUE_ATTR_PREFIX = "delimited.column.";
 
+    public static final PropertyDescriptor PROP_RECORD_FROM_ATTRIBUTE = new PropertyDescriptor.Builder()
+                                                                            .name("Record Source From Attribute")
+                                                                            .description("When set, the delimited record will be read from this flowfile attribute (don't include EL syntax curly braces or $)")
+                                                                            .required(false)
+                                                                            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+                                                                            .build();
+
     public static final PropertyDescriptor PROP_VALUE_ATTR_PREFIX = new PropertyDescriptor.Builder()
                                                                             .name("Output Attribute Prefix")
                                                                             .description("Delimited record columns will be added using this prefix for better grouping.")
@@ -120,6 +127,7 @@ public class ParseCSVRecord extends AbstractCSVProcessor {
         final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
         descriptors.add(PROP_FORMAT);
         descriptors.add(PROP_DELIMITER);
+        descriptors.add(PROP_RECORD_FROM_ATTRIBUTE);
         descriptors.add(PROP_SCHEMA_ATTR_PREFIX);
         descriptors.add(PROP_VALUE_ATTR_PREFIX);
         descriptors.add(PROP_TRIM_VALUES);
@@ -182,56 +190,68 @@ public class ParseCSVRecord extends AbstractCSVProcessor {
         session.read(original, new InputStreamCallback() {
             @Override
             public void process(InputStream inputStream) throws IOException {
-                // TODO expose the charset property?
-                LineIterator iterator = IOUtils.lineIterator(inputStream, UTF_8);
-                if (iterator.hasNext()) {
-                    lineFound.set(true);
-                    final String format = context.getProperty(PROP_FORMAT).getValue();
-                    final String delimiter = context.getProperty(PROP_DELIMITER).evaluateAttributeExpressions(original).getValue();
-                    final String schemaPrefix = context.getProperty(PROP_SCHEMA_ATTR_PREFIX).evaluateAttributeExpressions(original).getValue();
-                    final String valuePrefix = context.getProperty(PROP_VALUE_ATTR_PREFIX).evaluateAttributeExpressions(original).getValue();
-                    final boolean trimValues = context.getProperty(PROP_TRIM_VALUES).asBoolean();
+                final String fromAttribute = context.getProperty(PROP_RECORD_FROM_ATTRIBUTE).getValue();
 
-                    final CSVFormat csvFormat = buildFormat(format,
-                            delimiter,
-                            false, // this is a payload, not header anymore
-                            null); // no custom header
-
-                    final CSVParser parser = csvFormat.parse(new StringReader(iterator.nextLine()));
-                    List<CSVRecord> records = parser.getRecords();
-                    if (records.size() > 1) {
-                        // TODO revisit for NiFi's native micro-batching
-                        throw new ProcessException("Multi-line entries not supported");
+                String unparsedRecord;
+                // data source is the attribute
+                if (StringUtils.isNotBlank(fromAttribute)) {
+                    unparsedRecord = original.getAttribute(fromAttribute);
+                } else {
+                    // data source is the content
+                    // TODO expose the charset property?
+                    LineIterator iterator = IOUtils.lineIterator(inputStream, UTF_8);
+                    if (!iterator.hasNext()) {
+                        return;
                     }
+                    unparsedRecord = iterator.next();
+                }
 
-                    CSVRecord record = records.get(0);
+                lineFound.set(true);
+                final String format = context.getProperty(PROP_FORMAT).getValue();
+                final String delimiter = context.getProperty(PROP_DELIMITER).evaluateAttributeExpressions(original).getValue();
+                final String schemaPrefix = context.getProperty(PROP_SCHEMA_ATTR_PREFIX).evaluateAttributeExpressions(original).getValue();
+                final String valuePrefix = context.getProperty(PROP_VALUE_ATTR_PREFIX).evaluateAttributeExpressions(original).getValue();
+                final boolean trimValues = context.getProperty(PROP_TRIM_VALUES).asBoolean();
 
-                    Map<String, String> originalAttrs = original.getAttributes();
-                    // filter delimited schema attributes only
-                    Map<String, String> schemaAttrs = new HashMap<>();
-                    for (String key : originalAttrs.keySet()) {
-                        if (key.startsWith(schemaPrefix)) {
-                            schemaAttrs.put(key, originalAttrs.get(key));
-                        }
+                final CSVFormat csvFormat = buildFormat(format,
+                        delimiter,
+                        false, // this is a payload, not header anymore
+                        null); // no custom header
+
+                final CSVParser parser = csvFormat.parse(new StringReader(unparsedRecord));
+                List<CSVRecord> records = parser.getRecords();
+                if (records.size() > 1) {
+                    // TODO revisit for NiFi's native micro-batching
+                    throw new ProcessException("Multi-line entries not supported");
+                }
+
+                CSVRecord record = records.get(0);
+
+                Map<String, String> originalAttrs = original.getAttributes();
+                // filter delimited schema attributes only
+                Map<String, String> schemaAttrs = new HashMap<>();
+                for (String key : originalAttrs.keySet()) {
+                    if (key.startsWith(schemaPrefix)) {
+                        schemaAttrs.put(key, originalAttrs.get(key));
                     }
+                }
 
-                    // put key/value pairs into attributes
-                    for (int i = 0; i < record.size(); i++) {
-                        String columnName = schemaAttrs.get(schemaPrefix + (i + 1)); // 1-based column numbering
-                        if (columnName == null) {
-                            // 1-based column index
-                            columnName = String.valueOf(i + 1);
-                        }
-                        // TODO indexed schemaless parsing vs auto-schema vs user-provided schema
-                        String columnValue = record.get(i);
-                        if (trimValues) {
-                            columnValue = columnValue.trim();
-                        }
-                        String attrName = (StringUtils.isBlank(valuePrefix)
-                                               ? "delimited.column."
-                                               : valuePrefix) + columnName;
-                        outputAttrs.put(attrName, columnValue);
+                // put key/value pairs into attributes
+                for (int i = 0; i < record.size(); i++) {
+                    String columnName = schemaAttrs.get(schemaPrefix + (i + 1)); // 1-based column numbering
+                    if (columnName == null) {
+                        // 1-based column index
+                        columnName = String.valueOf(i + 1);
                     }
+                    // TODO indexed schemaless parsing vs auto-schema vs user-provided schema
+                    String columnValue = record.get(i);
+                    if (trimValues) {
+                        columnValue = columnValue.trim();
+                    }
+                    String attrName = (StringUtils.isBlank(valuePrefix)
+                                           ? "delimited.column."
+                                           : valuePrefix) + columnName;
+                    outputAttrs.put(attrName, columnValue);
                 }
             }
         });
