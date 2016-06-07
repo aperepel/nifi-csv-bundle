@@ -196,6 +196,10 @@ public class ParseCSVRecord extends AbstractCSVProcessor {
                 // data source is the attribute
                 if (StringUtils.isNotBlank(fromAttribute)) {
                     unparsedRecord = original.getAttribute(fromAttribute);
+                    if (StringUtils.isBlank(unparsedRecord)) {
+                        // will be routed to failure at the end of the method implementation
+                        return;
+                    }
                 } else {
                     // data source is the content
                     // TODO expose the charset property?

@@ -29,6 +29,7 @@ import static org.apache.nifi.processors.csv.AbstractCSVProcessor.DEFAULT_SCHEMA
 import static org.apache.nifi.processors.csv.ParseCSVRecord.DEFAULT_VALUE_ATTR_PREFIX;
 import static org.apache.nifi.processors.csv.ParseCSVRecord.PROP_RECORD_FROM_ATTRIBUTE;
 import static org.apache.nifi.processors.csv.ParseCSVRecord.PROP_TRIM_VALUES;
+import static org.apache.nifi.processors.csv.ParseCSVRecord.REL_FAILURE;
 import static org.apache.nifi.processors.csv.ParseCSVRecord.REL_SUCCESS;
 
 
@@ -122,5 +123,16 @@ public class ParseCSVRecordTest {
         ff.assertContentEquals("row1col1,row1col2\nrow2col1, row2col2");
         ff.assertAttributeEquals(DEFAULT_VALUE_ATTR_PREFIX + "1", "csvCol1");
         ff.assertAttributeEquals(DEFAULT_VALUE_ATTR_PREFIX + "2", "csvCol2");
+    }
+
+    @Test
+    public void nullInputFromAttribute() {
+        final TestRunner runner = TestRunners.newTestRunner(ParseCSVRecord.class);
+        runner.setProperty(PROP_RECORD_FROM_ATTRIBUTE, "my.csv.record.in.attribute");
+
+        runner.enqueue("row1col1,row1col2\nrow2col1, row2col2");
+        runner.run();
+
+        runner.assertAllFlowFilesTransferred(REL_FAILURE);
     }
 }
