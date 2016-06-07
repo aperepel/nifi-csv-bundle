@@ -90,7 +90,7 @@ public class ParseCSVRecord extends AbstractCSVProcessor {
 
     public static final PropertyDescriptor PROP_SCHEMA_ATTR_PREFIX = new PropertyDescriptor.Builder()
                                                                              .name("Input Schema Attribute Prefix")
-                                                                             .description("Use a delimited schema previously extracteed by ExtractCSVHeader")
+                                                                             .description("Use a delimited schema previously extracted by ExtractCSVHeader")
                                                                              .required(true)
                                                                              .expressionLanguageSupported(true)
                                                                              .defaultValue(DEFAULT_SCHEMA_ATTR_PREFIX)
