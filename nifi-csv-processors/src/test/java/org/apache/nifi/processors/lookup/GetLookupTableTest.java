@@ -21,7 +21,6 @@ import org.apache.nifi.reporting.InitializationException;
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,22 +28,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.nifi.processors.lookup.PutLookupTable.PROP_LOOKUP_ENTRY_ID;
-import static org.apache.nifi.processors.lookup.PutLookupTable.PROP_LOOKUP_TABLE_SERVICE;
-import static org.apache.nifi.processors.lookup.PutLookupTable.PROP_LOOKUP_TABLE_UPDATE_STRATEGY;
-import static org.apache.nifi.processors.lookup.PutLookupTable.REL_FAILURE;
-import static org.apache.nifi.processors.lookup.PutLookupTable.REL_SUCCESS;
-import static org.apache.nifi.processors.lookup.PutLookupTable.STRATEGY_KEEP_ORIGINAL;
+import static org.apache.nifi.processors.lookup.GetLookupTable.PROP_LOOKUP_ENTRY_ID;
+import static org.apache.nifi.processors.lookup.GetLookupTable.PROP_LOOKUP_TABLE_SERVICE;
+import static org.apache.nifi.processors.lookup.GetLookupTable.PROP_PUT_CACHE_VALUE_IN_ATTRIBUTE;
+import static org.apache.nifi.processors.lookup.GetLookupTable.REL_FOUND;
+import static org.apache.nifi.processors.lookup.GetLookupTable.REL_NOT_FOUND;
 
-
-public class PutLookupTableTest {
+public class GetLookupTableTest {
 
     private TestRunner runner;
     private InMemoryLookupTableService service;
 
     @Before
     public void init() throws InitializationException {
-        runner = TestRunners.newTestRunner(PutLookupTable.class);
+        runner = TestRunners.newTestRunner(GetLookupTable.class);
         service = new InMemoryLookupTableService();
         runner.addControllerService("service id", service);
         runner.enableControllerService(service);
@@ -54,55 +51,59 @@ public class PutLookupTableTest {
     }
 
     @Test
-    public void repeatablePutDefaults() throws Exception {
+    public void notFound() throws Exception {
         runner.setProperty(PROP_LOOKUP_ENTRY_ID, "${key}");
         Map<String, String> attrs = new HashMap<>();
         attrs.put("key", "lookupKey1");
+        attrs.put("do not touch this", "property");
         runner.enqueue("payload1", attrs);
         runner.run();
 
-        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
-        runner.assertTransferCount(REL_SUCCESS, 1);
-        List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        runner.assertAllFlowFilesTransferred(REL_NOT_FOUND);
+        runner.assertTransferCount(REL_NOT_FOUND, 1);
+        List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(REL_NOT_FOUND);
         MockFlowFile ff = flowFiles.get(0);
         ff.assertContentEquals("payload1");
-
-        String value = service.get("lookupKey1");
-        Assert.assertEquals("payload1", value);
-
-        runner.clearTransferState();
-
-        runner.enqueue("payload2", attrs);
-        runner.run();
-        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
-        runner.assertTransferCount(REL_SUCCESS, 1);
-        flowFiles = runner.getFlowFilesForRelationship(REL_SUCCESS);
-        ff = flowFiles.get(0);
-        ff.assertContentEquals("payload2");
+        ff.assertAttributeEquals("do not touch this", "property");
     }
 
     @Test
-    public void repeatablePutKeepOriginal() throws Exception {
+    public void foundIntoPayload() throws Exception {
         runner.setProperty(PROP_LOOKUP_ENTRY_ID, "${key}");
-        runner.setProperty(PROP_LOOKUP_TABLE_UPDATE_STRATEGY, STRATEGY_KEEP_ORIGINAL);
         Map<String, String> attrs = new HashMap<>();
         attrs.put("key", "lookupKey1");
+        attrs.put("do not touch this", "property");
+
+        service.put("lookupKey1", "looked up value");
         runner.enqueue("payload1", attrs);
         runner.run();
 
-        runner.assertAllFlowFilesTransferred(REL_SUCCESS);
-        runner.assertTransferCount(REL_SUCCESS, 1);
-        List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(REL_SUCCESS);
+        runner.assertAllFlowFilesTransferred(REL_FOUND);
+        runner.assertTransferCount(REL_FOUND, 1);
+        List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(REL_FOUND);
+        MockFlowFile ff = flowFiles.get(0);
+        ff.assertContentEquals("looked up value");
+        ff.assertAttributeEquals("do not touch this", "property");
+    }
+
+    @Test
+    public void foundIntoAttribute() throws Exception {
+        runner.setProperty(PROP_LOOKUP_ENTRY_ID, "${key}");
+        runner.setProperty(PROP_PUT_CACHE_VALUE_IN_ATTRIBUTE, "attr for lookup results");
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("key", "lookupKey1");
+        attrs.put("attr for lookup results", "not found");
+
+        service.put("lookupKey1", "looked up value");
+        runner.enqueue("payload1", attrs);
+        runner.run();
+
+        runner.assertAllFlowFilesTransferred(REL_FOUND);
+        runner.assertTransferCount(REL_FOUND, 1);
+        List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(REL_FOUND);
         MockFlowFile ff = flowFiles.get(0);
         ff.assertContentEquals("payload1");
-
-        runner.enqueue("payload2", attrs);
-        runner.run();
-        runner.assertTransferCount(REL_SUCCESS, 1);
-        runner.assertTransferCount(REL_FAILURE, 1);
-        flowFiles = runner.getFlowFilesForRelationship(REL_FAILURE);
-        ff = flowFiles.get(0);
-        ff.assertContentEquals("payload2");
+        ff.assertAttributeEquals("attr for lookup results", "looked up value");
     }
 
 }

@@ -45,14 +45,14 @@ public class GetLookupTable extends AbstractProcessor {
                                                                                .build();
 
     public static final PropertyDescriptor PROP_LOOKUP_ENTRY_ID = new PropertyDescriptor.Builder()
-                                                                                 .name("Lookup Entry Identifier")
-                                                                                 .description("A FlowFile attribute, or the results of an Attribute Expression Language statement, which will be evaluated "
-                                                                                                      + "against a FlowFile in order to determine the lookup key")
-                                                                                 .required(true)
-                                                                                 .addValidator(StandardValidators.createAttributeExpressionLanguageValidator(AttributeExpression.ResultType.STRING, true))
-                                                                                 .defaultValue("${hash.value}")
-                                                                                 .expressionLanguageSupported(true)
-                                                                                 .build();
+                                                                          .name("Lookup Entry Identifier")
+                                                                          .description("A FlowFile attribute, or the results of an Attribute Expression Language statement, which will be evaluated "
+                                                                                               + "against a FlowFile in order to determine the lookup key")
+                                                                          .required(true)
+                                                                          .addValidator(StandardValidators.createAttributeExpressionLanguageValidator(AttributeExpression.ResultType.STRING, true))
+                                                                          .defaultValue("${hash.value}")
+                                                                          .expressionLanguageSupported(true)
+                                                                          .build();
 
     public static final PropertyDescriptor PROP_PUT_CACHE_VALUE_IN_ATTRIBUTE = new PropertyDescriptor.Builder()
                                                                                        .name("Put Result Value In Attribute")
@@ -122,6 +122,9 @@ public class GetLookupTable extends AbstractProcessor {
         }
         LookupTableService lookup = context.getProperty(PROP_LOOKUP_TABLE_SERVICE).asControllerService(LookupTableService.class);
         final String result = lookup.get(lookupKey);
+        if (getLogger().isTraceEnabled()) {
+            getLogger().trace("Lookup result for key '{}': {}", new Object[]{lookupKey, result});
+        }
         if (result == null) {
             session.transfer(flowFile, REL_NOT_FOUND);
             getLogger().debug("Could not find an entry in lookup table for {}; routing to not-found", new Object[]{flowFile});

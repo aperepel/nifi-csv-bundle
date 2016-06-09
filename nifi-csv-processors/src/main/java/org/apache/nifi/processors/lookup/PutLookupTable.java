@@ -127,16 +127,14 @@ public class PutLookupTable extends AbstractProcessor {
         boolean cached = false;
 
         // get flow file content
-        final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        session.exportTo(flowFile, byteStream);
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        session.exportTo(flowFile, baos);
 
         if (updateStrategy.equals(STRATEGY_REPLACE.getValue())) {
-            // TODO support value in an attribute as well
-            session.exportTo(flowFile, byteStream);
-            lookup.put(lookupKey, byteStream.toString());
+            lookup.put(lookupKey, baos.toString());
             cached = true;
         } else if (updateStrategy.equals(STRATEGY_KEEP_ORIGINAL.getValue())) {
-            String oldValue = lookup.putIfAbsent(lookupKey, byteStream.toString());
+            String oldValue = lookup.putIfAbsent(lookupKey, baos.toString());
 
             if (oldValue == null) {
                 cached = true;
@@ -145,8 +143,15 @@ public class PutLookupTable extends AbstractProcessor {
 
         if (cached) {
             session.transfer(flowFile, REL_SUCCESS);
+            if (getLogger().isTraceEnabled()) {
+                getLogger().trace("Updated {}={}", new Object[] {lookupKey, baos.toString()});
+            }
         } else {
             session.transfer(flowFile, REL_FAILURE);
+            if (getLogger().isTraceEnabled()) {
+                getLogger().trace("Not updating " + lookupKey);
+            }
+
         }
     }
 
