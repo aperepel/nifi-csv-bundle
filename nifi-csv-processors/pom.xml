@@ -45,6 +45,13 @@
             <type>nar</type>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.nifi</groupId>
+            <artifactId>nifi-lookup</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Only for a patched RegexAttributesToJSON https://issues.apache.org/jira/browse/NIFI-1923-->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
