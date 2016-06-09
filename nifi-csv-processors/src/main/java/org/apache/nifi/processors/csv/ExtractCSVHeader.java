@@ -57,7 +57,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-@Tags({"csv", "tab", "excel"})
+@Tags({"csv", "tab", "excel", "header", "metadata"})
 @CapabilityDescription("Extract a header from a delimited file and save it in an attribute. Also maintains a list and count of column headers.")
 @SeeAlso({ParseCSVRecord.class})
 @WritesAttributes(
