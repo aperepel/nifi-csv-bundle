@@ -17,3 +17,7 @@ org.apache.nifi.processors.csv.ParseCSVRecord
 
 # patched one https://issues.apache.org/jira/browse/NIFI-1923
 org.apache.nifi.processors.standard.RegexAttributesToJSON
+
+# lookup table operators
+org.apache.nifi.processors.lookup.GetLookupTable
+org.apache.nifi.processors.lookup.PutLookupTable
