@@ -22,6 +22,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.behavior.InputRequirement;
+import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
@@ -58,6 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Tags({"csv", "tab", "excel", "header", "metadata"})
+@SupportsBatching
 @CapabilityDescription("Extract a header from a delimited file and save it in an attribute. Also maintains a list and count of column headers.")
 @SeeAlso({ParseCSVRecord.class})
 @WritesAttributes(
